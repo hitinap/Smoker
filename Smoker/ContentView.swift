@@ -91,10 +91,10 @@ struct HomeView: View {
                         ZStack {
                             Circle()
                                 .fill(colorOptions[uiColorIdx].1)
-                                .frame(width: 115, height: 115)
+                                .frame(width: 110, height: 110)
                                 .shadow(radius: 5)
                             Image(systemName: "plus")
-                                .font(.system(size: 68))
+                                .font(.system(size: 65))
                                 .foregroundColor(.white)
                         }
                     }
