@@ -269,11 +269,13 @@ struct AnalyticsView: View {
     }
 
     private var avgCounterValue: Double {
-        return Double(totalCounterValue) / Double(filteredData.count)
+        let avgValue = Double(totalCounterValue) / Double(filteredData.count)
+        return avgValue.isNaN ? 0.0 : avgValue
     }
 
     private var avgAmount: Double {
-        return totalAmount / Double(filteredData.count)
+        let avgValue = totalAmount / Double(filteredData.count)
+        return avgValue.isNaN ? 0.0 : avgValue
     }
 
     var body: some View {
