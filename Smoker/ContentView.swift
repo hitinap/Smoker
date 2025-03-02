@@ -508,7 +508,7 @@ struct SettingsView: View {
     private func validatePackCost(_ value: String) {
         if !value.isEmpty {
             if Double(value) != nil {
-                packSize = value
+                packCost = value
                 return
             }
         }
