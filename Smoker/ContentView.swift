@@ -34,6 +34,7 @@ struct HomeView: View {
     @AppStorage(Settings.packSize) var packSize = "20"
     @AppStorage("CounterHistory") var historyData: Data = Data()
     @AppStorage(Settings.isDarkMode) var isDarkMode = false
+    @AppStorage("LastButtonClickTime") var lastButtonClickTime = ""
 
     private var history: [String: Int] {
         guard let decoded = try? JSONDecoder().decode([String: Int].self, from: historyData) else { return [:] }
@@ -46,6 +47,14 @@ struct HomeView: View {
 
     private var todaySpentAmount: Double {
         return getCostOfOneThing() * Double(counterValue)
+    }
+
+    private var lastClickTime: String {
+        if lastButtonClickTime == "" { return "" }
+        let strDateIndex = lastButtonClickTime.index(lastButtonClickTime.startIndex, offsetBy: 10)
+        let strTimeIndex = lastButtonClickTime.index(lastButtonClickTime.endIndex, offsetBy: -8)
+        return String(lastButtonClickTime[..<strDateIndex]) == currentDate ?
+            String(lastButtonClickTime[strTimeIndex...]) : ""
     }
 
     var body: some View {
@@ -83,11 +92,19 @@ struct HomeView: View {
                 Spacer()
                 Spacer()
                 Spacer()
+
+                if lastClickTime != "" {
+                    Text("Нажали последний раз сегодня в \(lastClickTime)")
+                        .font(.system(size: 17))
+                        .foregroundColor(Color.gray.opacity(0.8))
+                        .padding(.bottom, 20)
+                }
+
                 Spacer()
 
                 HStack {
                     Spacer()
-                    Button(action: { incrementCounter() }) {
+                    Button(action: { incrementCounter(); setLastButtonClickTime() }) {
                         ZStack {
                             Circle()
                                 .fill(colorOptions[uiColorIdx].1)
@@ -110,14 +127,28 @@ struct HomeView: View {
     }
 
     struct HomeBackground: View {
+        @AppStorage(Settings.uiColorIdx) var uiColorIdx = 0
         @AppStorage(Settings.isDarkMode) var isDarkMode = false
+        
+        private var gradientEndColor: Color {
+            switch uiColorIdx {
+            case 0:
+                return Color(red: 0.6, green: 0.3, blue: 0.9)
+            case 1:
+                return Color.blue
+            case 2:
+                return Color.green
+            default:
+                return Color(red: 0.6, green: 0.3, blue: 0.9)
+            }
+        }
 
         var body: some View {
             ZStack {
                 LinearGradient(
                     gradient: Gradient(colors: [
-                        Color.purple,
-                        Color(red: 0.6, green: 0.3, blue: 0.9)
+                        colorOptions[uiColorIdx].1,
+                        gradientEndColor
                     ]),
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
@@ -189,6 +220,13 @@ struct HomeView: View {
 
     private func getCostOfOneThing() -> Double {
         return Double(packCost)! / Double(packSize)!
+    }
+
+    private func setLastButtonClickTime() {
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        let formattedDateTime = dateFormatter.string(from: Date())
+        lastButtonClickTime = formattedDateTime
     }
 
     private func incrementCounter() {
@@ -451,16 +489,12 @@ struct SettingsView: View {
         NavigationStack {
             Form {
                 Section(footer: Text("Стоимость 1 пачки")) {
-                    TextField("Введите сумму", text: $lastValidPackCost)
-                        .keyboardType(.decimalPad)
-                        .onChange(of: lastValidPackCost) { inputValue in
-                            validatePackCost(inputValue)
-                        }
+                    NumberTextField("Введите сумму", text: $lastValidPackCost, keyboardType: .decimalPad) { inputValue in
+                        validatePackCost(inputValue)
+                    }
                 }
                 Section(footer: Text("Кол-во сигарет в 1 пачке")) {
-                    TextField("Введите количество", text: $lastValidPackSize)
-                    .keyboardType(.numberPad)
-                    .onChange(of: lastValidPackSize) { inputValue in
+                    NumberTextField("Введите количество", text: $lastValidPackSize, keyboardType: .numberPad) { inputValue in
                         validatePackSize(inputValue)
                     }
                 }
@@ -517,7 +551,7 @@ struct SettingsView: View {
 
     private func validatePackSize(_ value: String) {
         if !value.isEmpty {
-            if Int(value) != nil {
+            if Int(value) != nil && Int(value) != 0 {
                 packSize = value
                 return
             }
